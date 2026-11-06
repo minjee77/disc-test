@@ -48,4 +48,390 @@
                 <!-- Workshop Timeline Summary -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left my-6 space-y-2 text-xs md:text-sm">
                     <div class="font-semibold text-slate-700 mb-2 flex items-center">
-                        <i class="fa-solid fa-clock text-indigo-500 mr-2"></i> 오늘 진행되는 워크숍 안내 (총 60분
+                        <i class="fa-solid fa-clock text-indigo-500 mr-2"></i> 오늘 진행되는 워크숍 안내 (총 60분)
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <span class="font-bold text-indigo-600">1단계 (15분)</span>
+                            <p class="text-slate-600 mt-1">간이 체크리스트 업무 성향 즉석 진단</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <span class="font-bold text-indigo-600">2단계 (20분)</span>
+                            <p class="text-slate-600 mt-1">동일 성향끼리 답답했던 순간 & 요청사항 정리</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <span class="font-bold text-indigo-600">3단계 (25분)</span>
+                            <p class="text-slate-600 mt-1">유형별 포스트잇 게시 및 자유로운 순회/공유</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Info Form -->
+                <div class="pt-2 max-w-md mx-auto text-left">
+                    <label for="user-name" class="block text-sm font-semibold text-slate-700 mb-1">참가자 이름 / 닉네임 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="user-name" placeholder="이름을 입력해주세요 (예: 홍길동)" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200">
+                    <p id="name-error" class="text-xs text-rose-500 mt-1 hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i>이름을 입력하셔야 진단을 시작할 수 있습니다.</p>
+                </div>
+
+                <div class="pt-4">
+                    <button onclick="startAssessment()" class="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 transition duration-200 transform active:scale-95 flex items-center justify-center mx-auto space-x-2">
+                        <span>검사 시작하기</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Assessment Form View -->
+        <section id="view-assessment" class="hidden space-y-6">
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 sticky top-16 z-40 shadow-sm">
+                <div class="text-xs sm:text-sm text-indigo-900">
+                    <span class="font-bold">응답 방법:</span> 평소 편안하게 행동하는 스타일을 기준으로 각 항목별 <b>1, 2, 3, 4점</b>을 중복 없이 매겨주세요.<br>
+                    <span class="text-indigo-600 text-xs">(4점: 가장 일치 | 3점: 조금 일치 | 2점: 조금 불일치 | 1점: 가장 불일치)</span>
+                </div>
+                <div class="bg-white px-3 py-1.5 rounded-lg border border-indigo-200 text-xs font-semibold text-indigo-700 whitespace-nowrap">
+                    진행도: <span id="progress-text">0 / 15</span>
+                </div>
+            </div>
+
+            <form id="disc-form" onsubmit="event.preventDefault(); submitAssessment();" class="space-y-6">
+                <div id="questions-list" class="space-y-6"></div>
+                <div class="bg-white p-6 rounded-2xl custom-shadow border border-slate-100 text-center space-y-3">
+                    <p id="validation-msg" class="text-sm font-medium text-amber-600 hidden">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> 아직 점수가 채워지지 않았거나 중복된 항목이 있는 문항이 있습니다.
+                    </p>
+                    <button type="submit" class="w-full sm:w-auto px-10 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-emerald-200 transition duration-200 transform active:scale-95">
+                        <i class="fa-solid fa-check-double mr-2"></i>검사 결과 보기
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Results View -->
+        <section id="view-result" class="hidden space-y-6">
+            <div id="result-card" class="bg-white rounded-2xl p-6 md:p-8 custom-shadow border border-slate-100 space-y-8">
+                
+                <div class="border-b border-slate-100 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-xs font-semibold mb-2">
+                            <i class="fa-solid fa-award"></i>
+                            <span>DISC 성격 유형 검사 결과</span>
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900">
+                            <span id="result-user-name" class="text-indigo-600">진단자</span> 님의 업무 성향
+                        </h2>
+                    </div>
+                    <div class="text-left md:text-right">
+                        <span class="text-xs text-slate-400 block">최고 점수 대표 유형</span>
+                        <span id="primary-type-badge" class="inline-block mt-1 px-4 py-1.5 rounded-xl font-bold text-lg text-white bg-indigo-600 shadow-sm">-</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-5 grid grid-cols-2 gap-3">
+                        <div class="p-4 rounded-xl border border-rose-200 bg-rose-50/50 flex flex-col justify-between">
+                            <div class="flex justify-between items-center"><span class="font-bold text-rose-700 text-lg">D (주도형)</span><i class="fa-solid fa-bolt text-rose-400"></i></div>
+                            <div class="mt-3 flex items-baseline justify-between"><span class="text-2xl font-black text-rose-800" id="score-D">0</span><span class="text-xs text-rose-600 font-medium">점수</span></div>
+                        </div>
+                        <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/50 flex flex-col justify-between">
+                            <div class="flex justify-between items-center"><span class="font-bold text-amber-700 text-lg">I (사교형)</span><i class="fa-solid fa-comments text-amber-400"></i></div>
+                            <div class="mt-3 flex items-baseline justify-between"><span class="text-2xl font-black text-amber-800" id="score-I">0</span><span class="text-xs text-amber-600 font-medium">점수</span></div>
+                        </div>
+                        <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 flex flex-col justify-between">
+                            <div class="flex justify-between items-center"><span class="font-bold text-emerald-700 text-lg">S (안정형)</span><i class="fa-solid fa-handshake text-emerald-400"></i></div>
+                            <div class="mt-3 flex items-baseline justify-between"><span class="text-2xl font-black text-emerald-800" id="score-S">0</span><span class="text-xs text-emerald-600 font-medium">점수</span></div>
+                        </div>
+                        <div class="p-4 rounded-xl border border-blue-200 bg-blue-50/50 flex flex-col justify-between">
+                            <div class="flex justify-between items-center"><span class="font-bold text-blue-700 text-lg">C (신중형)</span><i class="fa-solid fa-magnifying-glass text-blue-400"></i></div>
+                            <div class="mt-3 flex items-baseline justify-between"><span class="text-2xl font-black text-blue-800" id="score-C">0</span><span class="text-xs text-blue-600 font-medium">점수</span></div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-7 bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-center items-center min-h-[260px]">
+                        <canvas id="discChart" class="max-h-[260px]"></canvas>
+                    </div>
+                </div>
+
+                <div id="type-details" class="bg-indigo-50/40 border border-indigo-100 rounded-xl p-5 md:p-6 space-y-4">
+                    <h3 id="type-title" class="text-xl font-bold text-indigo-950 flex items-center"><i class="fa-solid fa-user-gear text-indigo-600 mr-2"></i> 유형 프로필 상세</h3>
+                    <p id="type-desc" class="text-slate-700 text-sm md:text-base leading-relaxed">유형 설명이 표시됩니다.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div class="bg-white p-4 rounded-lg border border-indigo-100"><span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">강점 & 특징</span><p id="type-strengths" class="text-xs md:text-sm text-slate-700">--</p></div>
+                        <div class="bg-white p-4 rounded-lg border border-indigo-100"><span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">동기 요인 & 욕구</span><p id="type-motivations" class="text-xs md:text-sm text-slate-700">--</p></div>
+                        <div class="bg-white p-4 rounded-lg border border-indigo-100"><span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">스트레스 해소 방식</span><p id="type-stress" class="text-xs md:text-sm text-slate-700">--</p></div>
+                        <div class="bg-white p-4 rounded-lg border border-indigo-100"><span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">선호하는 환경</span><p id="type-environment" class="text-xs md:text-sm text-slate-700">--</p></div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-200 pt-6">
+                    <h4 class="font-bold text-slate-900 mb-3 flex items-center text-sm md:text-base"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i> 2단계 워크숍 진행을 위한 가이드</h4>
+                    <div class="bg-slate-50 p-4 rounded-xl text-xs md:text-sm text-slate-700 space-y-2 border border-slate-200">
+                        <p class="font-medium text-slate-900">본인의 최고 점수 유형(<span id="guide-type-name" class="font-bold text-indigo-600"></span>) 그룹으로 모여주세요!</p>
+                        <ul class="list-disc list-inside space-y-1 text-slate-600 pl-1">
+                            <li>업무 수행 중 가장 답답했던 순간을 공유해보세요.</li>
+                            <li>다른 성향의 팀원들에게 바라는 요청사항을 포스트잇에 정리하세요.</li>
+                            <li>정리된 내용을 벽면에 게시하고 자유롭게 의견을 나눠보세요 (25분 순회).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 justify-center pt-2">
+                <button onclick="downloadResultImage()" class="px-5 py-3 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-xl text-sm shadow-md transition duration-200 flex items-center"><i class="fa-solid fa-file-arrow-down mr-2"></i>결과 이미지 저장</button>
+                <button onclick="copySummaryText()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm shadow-md transition duration-200 flex items-center"><i class="fa-solid fa-copy mr-2"></i>결과 텍스트 복사</button>
+                <button onclick="window.print()" class="px-5 py-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium rounded-xl text-sm shadow-sm transition duration-200 flex items-center"><i class="fa-solid fa-print mr-2"></i>인쇄하기</button>
+                <button onclick="resetAssessment()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl text-sm transition duration-200 flex items-center"><i class="fa-solid fa-rotate-right mr-2"></i>다시 검사하기</button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-100 border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-4xl mx-auto px-4 text-center text-xs text-slate-500">
+            <p>DISC Personality Assessment Tool | Heart-Warming Workshop Guide</p>
+        </div>
+    </footer>
+
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition duration-300 pointer-events-none flex items-center space-x-2 z-50 text-sm">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">메시지 내용</span>
+    </div>
+
+    <script>
+        const rawQuestions = [
+            { id: 1, title: "1. 내 성격은...", options: [{ type: 'C', text: "진지하고, 세심하다" }, { type: 'S', text: "태평스럽고 느리다" }, { type: 'I', text: "사교적이며 감정표현을 잘한다" }, { type: 'D', text: "명령적이고, 주도적이다" }] },
+            { id: 2, title: "2. 내 성격 스타일은...", options: [{ type: 'C', text: "세부사항을 중시" }, { type: 'S', text: "과정과 팀을 중시" }, { type: 'I', text: "사람관계 중시" }, { type: 'D', text: "일의 결과를 중시" }] },
+            { id: 3, title: "3. 다른이에 대한 나의 태도는...", options: [{ type: 'C', text: "차갑고 객관적이다" }, { type: 'S', text: "넉넉하고 자제력 있다" }, { type: 'I', text: "친절하고 싹싹하다" }, { type: 'D', text: "시원시원하다" }] },
+            { id: 4, title: "4. 다른 사람의 말을 들을 때...", options: [{ type: 'C', text: "사실에 초점을 맞추고 분석한다" }, { type: 'S', text: "기꺼이 주의를 기울여 듣는다" }, { type: 'I', text: "주위가 산만하다" }, { type: 'D', text: "종종 참을성이 없다" }] },
+            { id: 5, title: "5. 나의 태도는 다음으로 묘사될 수 있다...", options: [{ type: 'C', text: "평가적, 말이 없는" }, { type: 'S', text: "수동적, 개방적" }, { type: 'I', text: "매력적, 사교적, 외향적" }, { type: 'D', text: "권위적, 경쟁적" }] },
+            { id: 6, title: "6. 나의 기본 욕구는...", options: [{ type: 'C', text: "질 높은 과제 완수" }, { type: 'S', text: "현재 상태를 그대로 유지" }, { type: 'I', text: "재미있는 활동" }, { type: 'D', text: "도전" }] },
+            { id: 7, title: "7. 나의 장점은...", options: [{ type: 'C', text: "정확성" }, { type: 'S', text: "협조성" }, { type: 'I', text: "낙천성" }, { type: 'D', text: "결단력" }] },
+            { id: 8, title: "8. 나의 단점은...", options: [{ type: 'C', text: "비판적인 성향" }, { type: 'S', text: "수동적 (남이 시켜야 함)" }, { type: 'I', text: "말이 많음" }, { type: 'D', text: "고집이 셈" }] },
+            { id: 9, title: "9. 내가 좋아하는 것은...", options: [{ type: 'C', text: "논리적, 분석적인 업무" }, { type: 'S', text: "부드러움, 팀으로 일하기" }, { type: 'I', text: "사람을 좋아하고 명랑함" }, { type: 'D', text: "경쟁에서 이기기" }] },
+            { id: 10, title: "10. 내가 싫어하는 것은...", options: [{ type: 'C', text: "애매모호한 기준" }, { type: 'S', text: "갑작스러운 상황, 놀라움" }, { type: 'I', text: "틀에 박힌 일상" }, { type: 'D', text: "우유부단함 (결정 못 내림)" }] },
+            { id: 11, title: "11. 나의 의사소통 및 결정 방식은...", options: [{ type: 'C', text: "분석적/세부 관심, 많은 자료 심사숙고 후 결정" }, { type: 'S', text: "공감해 줌, 인간관계를 반영한 의사결정" }, { type: 'I', text: "생생하고 설득력 있게 말함, 즉흥적 결정" }, { type: 'D', text: "핵심을 직선적으로 말함, 중요 사항 근거 빠른 결정" }] },
+            { id: 12, title: "12. 내가 안정감을 얻는 상황은...", options: [{ type: 'C', text: "미리 준비할 시간이 충분할 때" }, { type: 'S', text: "현재 상태를 그대로 유지할 때" }, { type: 'I', text: "유연성과 다양성이 풍부할 때" }, { type: 'D', text: "내가 상황을 통제할 수 있을 때" }] },
+            { id: 13, title: "13. 나를 잘 표현하는 말은...", options: [{ type: 'C', text: "돌다리도 두드린다" }, { type: 'S', text: "함께해요" }, { type: 'I', text: "즐거움이 가득한 세상" }, { type: 'D', text: "나를 따르라" }] },
+            { id: 14, title: "14. 나의 스트레스 해소 방식은...", options: [{ type: 'C', text: "혼자 조용히 자료 정리 및 정적인 취미" }, { type: 'S', text: "편안한 공간에서의 정서적 충전과 휴식" }, { type: 'I', text: "수다 등 사람들과의 사교활동" }, { type: 'D', text: "스포츠, 운동 등 육체적 활동" }] },
+            { id: 15, title: "15. 내가 팀 일원으로서 보여주는 핵심 가치는...", options: [{ type: 'C', text: "높은 표준 제시 및 체계적인 점검" }, { type: 'S', text: "신뢰감 형성 및 배려심 있는 지원" }, { type: 'I', text: "긍정적인 분위기 조성 및 활력 부여" }, { type: 'D', text: "빠른 추진력 및 목표 달성 조력" }] }
+        ];
+
+        const typeInfo = {
+            D: { name: "주도형 (Dominance)", badgeBg: "bg-rose-600", color: "#e11d48", title: "도전적이고 결과를 중시하는 주도형 (D)", desc: "결단력이 뛰어나며 목표를 달성하기 위해 강력한 추진력을 발휘합니다.", strengths: "빠른 의사결정, 결단력, 목표 지향성", motivations: "도전적인 과제, 통제권, 권한 부여", stress: "스포츠, 운동 등 육체적 활동", environment: "결과에 대해 정당한 보상이 주어지는 환경" },
+            I: { name: "사교형 (Influence)", badgeBg: "bg-amber-500", color: "#f59e0b", title: "낙천적이고 사람 중심적인 사교형 (I)", desc: "사람들과 어울리는 것을 좋아하고 설득력 있게 의사를 전달합니다.", strengths: "친화력, 설득력, 낙천적 사고", motivations: "사회적 인정, 재미있는 활동", stress: "수다, 모임 등 사교 활동", environment: "아이디어를 자유롭게 나눌 수 있는 환경" },
+            S: { name: "안정형 (Steadiness)", badgeBg: "bg-emerald-600", color: "#059669", title: "협조적이고 참을성 있는 안정형 (S)", desc: "온화하고 공감 능력이 뛰어나며 조화로운 팀워크를 중요하게 생각합니다.", strengths: "경청 능력, 협조성, 신뢰감", motivations: "안정적인 상황, 팀원과의 관계", stress: "편안한 공간에서의 휴식", environment: "갑작스러운 변화가 적고 조화로운 환경" },
+            C: { name: "신중형 (Conscientiousness)", badgeBg: "bg-blue-600", color: "#2563eb", title: "분석적이고 세심한 신중형 (C)", desc: "질 높은 과제 완수를 목표로 정확성과 논리성을 중시합니다.", strengths: "정밀함, 데이터 분석력, 품질 표준", motivations: "질 높은 성과, 명확한 가이드라인", stress: "자료 정리 및 정적인 취미", environment: "명확한 기대치와 분석할 시간이 주는 환경" }
+        };
+
+        const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSetqLHhKs-Sl-3eJmYeMdtq8en0JyUT4s-r6S0a64uKeRrzBA/formResponse";
+        const FORM_ENTRIES = {
+            name: "entry.1500487725",
+            type: "entry.1162725764",
+            scoreD: "entry.600932316",
+            scoreI: "entry.310524757",
+            scoreS: "entry.1920889938",
+            scoreC: "entry.31942302"
+        };
+
+        let userName = "";
+        let answers = {};
+        let discChartInstance = null;
+
+        function initAnswers() { rawQuestions.forEach(q => answers[q.id] = { 0: null, 1: null, 2: null, 3: null }); }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-list');
+            container.innerHTML = '';
+            rawQuestions.forEach((q) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl p-5 md:p-6 custom-shadow border border-slate-100 space-y-4";
+                card.id = `q-card-${q.id}`;
+
+                let html = `<div class="flex items-center justify-between border-b border-slate-100 pb-3"><h3 class="font-bold text-slate-800 text-base md:text-lg">${q.title}</h3><span id="q-status-${q.id}" class="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-medium">미완료</span></div><div class="space-y-3">`;
+                q.options.forEach((opt, optIndex) => {
+                    html += `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-indigo-50/40 border border-slate-200 transition duration-150 gap-3"><span class="text-sm text-slate-700 font-medium leading-snug flex-1">${opt.text}</span><div class="flex items-center space-x-1 sm:space-x-2 shrink-0 self-end sm:self-auto">${[1, 2, 3, 4].map(score => `<button type="button" onclick="selectScore(${q.id}, ${optIndex}, ${score})" id="btn-${q.id}-${optIndex}-${score}" class="score-btn-${q.id} w-9 h-9 md:w-10 md:h-10 rounded-lg text-xs md:text-sm font-semibold border transition duration-150 border-slate-300 bg-white text-slate-600 hover:border-indigo-400">${score}점</button>`).join('')}</div></div>`;
+                });
+                html += `</div>`;
+                card.innerHTML = html;
+                container.appendChild(card);
+            });
+        }
+
+        function startAssessment() {
+            const nameInput = document.getElementById('user-name');
+            const name = nameInput.value.trim();
+            if (!name) { document.getElementById('name-error').classList.remove('hidden'); nameInput.focus(); return; }
+            document.getElementById('name-error').classList.add('hidden');
+            userName = name;
+            document.getElementById('view-intro').classList.add('hidden');
+            document.getElementById('view-assessment').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectScore(qId, optIdx, score) {
+            Object.keys(answers[qId]).forEach(idx => { if (answers[qId][idx] === score) answers[qId][idx] = null; });
+            answers[qId][optIdx] = score;
+            updateQuestionUI(qId);
+            updateProgress();
+        }
+
+        function updateQuestionUI(qId) {
+            const qAnswers = answers[qId];
+            rawQuestions[qId - 1].options.forEach((_, optIdx) => {
+                [1, 2, 3, 4].forEach(score => {
+                    const btn = document.getElementById(`btn-${qId}-${optIdx}-${score}`);
+                    if (btn) btn.className = `score-btn-${qId} w-9 h-9 md:w-10 md:h-10 rounded-lg text-xs md:text-sm font-semibold border transition duration-150 border-slate-300 bg-white text-slate-600 hover:border-indigo-400`;
+                });
+            });
+            Object.keys(qAnswers).forEach(optIdx => {
+                const score = qAnswers[optIdx];
+                if (score !== null) {
+                    const btn = document.getElementById(`btn-${qId}-${optIdx}-${score}`);
+                    if (btn) btn.className = `score-btn-${qId} w-9 h-9 md:w-10 md:h-10 rounded-lg text-xs md:text-sm font-bold border transition duration-150 border-indigo-600 bg-indigo-600 text-white shadow-sm`;
+                }
+            });
+            const scoresUsed = Object.values(qAnswers).filter(s => s !== null);
+            const isComplete = scoresUsed.length === 4 && new Set(scoresUsed).size === 4;
+            const statusEl = document.getElementById(`q-status-${qId}`);
+            const cardEl = document.getElementById(`q-card-${qId}`);
+            if (isComplete) {
+                statusEl.textContent = '완료'; statusEl.className = 'text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold'; cardEl.classList.remove('border-amber-300');
+            } else if (scoresUsed.length > 0) {
+                statusEl.textContent = `진행중 (${scoresUsed.length}/4)`; statusEl.className = 'text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium';
+            } else {
+                statusEl.textContent = '미완료'; statusEl.className = 'text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-medium';
+            }
+        }
+
+        function updateProgress() {
+            let completed = 0;
+            rawQuestions.forEach(q => {
+                const scores = Object.values(answers[q.id]).filter(s => s !== null);
+                if (scores.length === 4 && new Set(scores).size === 4) completed++;
+            });
+            document.getElementById('progress-text').textContent = `${completed} / 15`;
+        }
+
+        function submitAssessment() {
+            let incomplete = [];
+            rawQuestions.forEach(q => {
+                const scores = Object.values(answers[q.id]).filter(s => s !== null);
+                if (scores.length !== 4 || new Set(scores).size !== 4) incomplete.push(q.id);
+            });
+            if (incomplete.length > 0) {
+                document.getElementById('validation-msg').classList.remove('hidden');
+                document.getElementById(`q-card-${incomplete[0]}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showToast('모든 문항에 1, 2, 3, 4점을 중복 없이 입력해 주세요.');
+                return;
+            }
+            document.getElementById('validation-msg').classList.add('hidden');
+
+            let totals = { D: 0, I: 0, S: 0, C: 0 };
+            rawQuestions.forEach(q => {
+                q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
+            });
+
+            sendDataToGoogleForm(userName, totals);
+            showResults(totals);
+        }
+
+        function sendDataToGoogleForm(name, totals) {
+            let maxType = 'D', maxScore = -1;
+            ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
+
+            const formData = new URLSearchParams();
+            formData.append(FORM_ENTRIES.name, name);
+            formData.append(FORM_ENTRIES.type, typeInfo[maxType].name);
+            formData.append(FORM_ENTRIES.scoreD, totals.D);
+            formData.append(FORM_ENTRIES.scoreI, totals.I);
+            formData.append(FORM_ENTRIES.scoreS, totals.S);
+            formData.append(FORM_ENTRIES.scoreC, totals.C);
+
+            fetch(GOOGLE_FORM_ACTION_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).catch(err => console.log('Form submission completed'));
+        }
+
+        function showResults(totals) {
+            document.getElementById('view-assessment').classList.add('hidden');
+            document.getElementById('view-result').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            document.getElementById('result-user-name').textContent = userName;
+            document.getElementById('score-D').textContent = totals.D;
+            document.getElementById('score-I').textContent = totals.I;
+            document.getElementById('score-S').textContent = totals.S;
+            document.getElementById('score-C').textContent = totals.C;
+
+            let maxType = 'D', maxScore = -1;
+            ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
+            const pInfo = typeInfo[maxType];
+
+            const badge = document.getElementById('primary-type-badge');
+            badge.textContent = `${pInfo.name}`;
+            badge.className = `inline-block mt-1 px-4 py-1.5 rounded-xl font-bold text-sm md:text-base text-white shadow-sm ${pInfo.badgeBg}`;
+
+            document.getElementById('type-title').innerHTML = `<i class="fa-solid fa-user-gear text-indigo-600 mr-2"></i> ${pInfo.title}`;
+            document.getElementById('type-desc').textContent = pInfo.desc;
+            document.getElementById('type-strengths').textContent = pInfo.strengths;
+            document.getElementById('type-motivations').textContent = pInfo.motivations;
+            document.getElementById('type-stress').textContent = pInfo.stress;
+            document.getElementById('type-environment').textContent = pInfo.environment;
+            document.getElementById('guide-type-name').textContent = pInfo.name;
+
+            renderChart(totals);
+        }
+
+        function renderChart(totals) {
+            const ctx = document.getElementById('discChart').getContext('2d');
+            if (discChartInstance) discChartInstance.destroy();
+            discChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['주도형 (D)', '사교형 (I)', '안정형 (S)', '신중형 (C)'],
+                    datasets: [{
+                        data: [totals.D, totals.I, totals.S, totals.C],
+                        backgroundColor: ['rgba(225,29,72,0.75)', 'rgba(245,158,11,0.75)', 'rgba(5,150,105,0.75)', 'rgba(37,99,235,0.75)'],
+                        borderColor: ['#e11d48', '#f59e0b', '#059669', '#2563eb'],
+                        borderWidth: 2, borderRadius: 8
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 60 } } }
+            });
+        }
+
+        function resetAssessment() {
+            if (confirm('진단 결과가 초기화됩니다. 다시 시작하시겠습니까?')) {
+                initAnswers(); renderQuestions(); updateProgress();
+                document.getElementById('view-result').classList.add('hidden');
+                document.getElementById('view-intro').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        function copySummaryText() {
+            const text = `[DISC 진단 결과]\n- 이름: ${userName}\n- 대표유형: ${document.getElementById('primary-type-badge').textContent}\n- 점수: D:${document.getElementById('score-D').textContent} / I:${document.getElementById('score-I').textContent} / S:${document.getElementById('score-S').textContent} / C:${document.getElementById('score-C').textContent}`;
+            const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
+            showToast('진단 결과가 클립보드에 복사되었습니다.');
+        }
+
+        function downloadResultImage() {
+            showToast('이미지 생성 중입니다...');
+            html2canvas(document.getElementById('result-card'), { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                const link = document.createElement('a'); link.download = `DISC_진단결과_${userName}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        }
+
+        window.onload = function() { initAnswers(); renderQuestions(); };
+    </script>
+</body>
+</html>
