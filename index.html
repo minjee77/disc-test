@@ -330,6 +330,7 @@
                 q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
             });
 
+            // 🚀 구글 폼으로 숨겨진 iFrame 방식 전송
             sendDataToGoogleForm(userName, totals);
             showResults(totals);
         }
@@ -338,20 +339,42 @@
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
-            const formData = new URLSearchParams();
-            formData.append(FORM_ENTRIES.name, name);
-            formData.append(FORM_ENTRIES.type, typeInfo[maxType].name);
-            formData.append(FORM_ENTRIES.scoreD, totals.D);
-            formData.append(FORM_ENTRIES.scoreI, totals.I);
-            formData.append(FORM_ENTRIES.scoreS, totals.S);
-            formData.append(FORM_ENTRIES.scoreC, totals.C);
+            // 보이지 않는 iframe 생성
+            let iframe = document.getElementById('hidden_iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.name = 'hidden_iframe';
+                iframe.id = 'hidden_iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
 
-            fetch(GOOGLE_FORM_ACTION_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString()
-            }).catch(err => console.log('Form submission completed'));
+            // 구글 폼 전송용 폼 태그 생성
+            const form = document.createElement('form');
+            form.action = GOOGLE_FORM_ACTION_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe';
+
+            const inputs = {
+                [FORM_ENTRIES.name]: name,
+                [FORM_ENTRIES.type]: typeInfo[maxType].name,
+                [FORM_ENTRIES.scoreD]: totals.D,
+                [FORM_ENTRIES.scoreI]: totals.I,
+                [FORM_ENTRIES.scoreS]: totals.S,
+                [FORM_ENTRIES.scoreC]: totals.C
+            };
+
+            for (const key in inputs) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = inputs[key];
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+            setTimeout(() => { document.body.removeChild(form); }, 1000);
         }
 
         function showResults(totals) {
