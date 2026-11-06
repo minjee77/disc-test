@@ -36,7 +36,7 @@
 
     <main class="max-w-4xl mx-auto px-4 py-6 flex-grow w-full">
 
-        <!-- Intro / User Setup View -->
+        <!-- Intro View -->
         <section id="view-intro" class="bg-white rounded-2xl p-6 md:p-8 custom-shadow border border-slate-100 mb-6">
             <div class="text-center max-w-2xl mx-auto space-y-4">
                 <div class="inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-full mb-2">
@@ -48,7 +48,6 @@
                     각 문항별 4개 문장에 대해 <b>가장 일치하는 순서대로 4점, 3점, 2점, 1점</b>을 중복 없이 입력합니다.
                 </p>
 
-                <!-- Workshop Timeline Summary -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left my-6 space-y-2 text-xs md:text-sm">
                     <div class="font-semibold text-slate-700 mb-2 flex items-center">
                         <i class="fa-solid fa-clock text-indigo-500 mr-2"></i> 오늘 진행되는 워크숍 안내 (총 60분)
@@ -69,7 +68,6 @@
                     </div>
                 </div>
 
-                <!-- User Info Form -->
                 <div class="pt-2 max-w-md mx-auto text-left">
                     <label for="user-name" class="block text-sm font-semibold text-slate-700 mb-1">참가자 이름 / 닉네임 <span class="text-rose-500">*</span></label>
                     <input type="text" id="user-name" placeholder="이름을 입력해주세요 (예: 홍길동)" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200">
@@ -173,7 +171,7 @@
             </div>
         </section>
 
-        <!-- Admin View (진행자 전용 실시간 명단) -->
+        <!-- Admin View -->
         <section id="view-admin" class="hidden space-y-6">
             <div class="bg-white rounded-2xl p-6 md:p-8 custom-shadow border border-slate-100 space-y-6">
                 
@@ -274,9 +272,6 @@
             C: { name: "신중형 (Conscientiousness)", badgeBg: "bg-blue-600", color: "#2563eb", title: "분석적이고 세심한 신중형 (C)", desc: "질 높은 과제 완수를 목표로 정확성과 논리성을 중시합니다.", strengths: "정밀함, 데이터 분석력, 품질 표준", motivations: "질 높은 성과, 명확한 가이드라인", stress: "자료 정리 및 정적인 취미", environment: "명확한 기대치와 분석할 시간이 주는 환경" }
         };
 
-        // 🌐 실시간 공용 데이터베이스 (Firebase Realtime Rest API)
-        const DB_URL = "https://disc-test-workshop-default-rtdb.firebaseio.com/results.json";
-
         let userName = "";
         let answers = {};
         let discChartInstance = null;
@@ -375,26 +370,25 @@
                 q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
             });
 
-            saveResultToCloud(userName, totals);
+            saveResult(userName, totals);
             showResults(totals);
         }
 
-        // 🚀 클라우드 DB로 실시간 데이터 제출
-        function saveResultToCloud(name, totals) {
+        function saveResult(name, totals) {
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
-            const payload = {
-                name: name,
-                typeKey: maxType,
-                timestamp: Date.now()
-            };
-
-            fetch(DB_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(err => console.log('DB 전송 에러:', err));
+            let currentList = JSON.parse(localStorage.getItem('disc_results_list') || '[]');
+            
+            // 동일 이름 중복 제출 방지 (이름이 있으면 유형만 업데이트)
+            const existingIndex = currentList.findIndex(item => item.name === name);
+            if (existingIndex > -1) {
+                currentList[existingIndex].typeKey = maxType;
+            } else {
+                currentList.push({ name: name, typeKey: maxType });
+            }
+            
+            localStorage.setItem('disc_results_list', JSON.stringify(currentList));
         }
 
         function showResults(totals) {
@@ -458,53 +452,34 @@
             }
         }
 
-        // 🚀 클라우드 DB에서 전체 참가자 명단 실시간 조회
         function loadAdminData() {
-            fetch(DB_URL)
-                .then(res => res.json())
-                .then(data => {
-                    let grouped = { D: [], I: [], S: [], C: [] };
-                    if (data) {
-                        Object.values(data).forEach(item => {
-                            if (item.typeKey && grouped[item.typeKey]) {
-                                if (!grouped[item.typeKey].includes(item.name)) {
-                                    grouped[item.typeKey].push(item.name);
-                                }
-                            }
-                        });
-                    }
+            const data = JSON.parse(localStorage.getItem('disc_results_list') || '[]');
+            let grouped = { D: [], I: [], S: [], C: [] };
+            
+            data.forEach(item => {
+                if (item.typeKey && grouped[item.typeKey]) {
+                    grouped[item.typeKey].push(item.name);
+                }
+            });
 
-                    ['D', 'I', 'S', 'C'].forEach(typeKey => {
-                        const el = document.getElementById(`names-list-${typeKey}`);
-                        const names = grouped[typeKey];
-                        if (names.length === 0) {
-                            el.textContent = '제출된 참가자가 없습니다.';
-                            el.className = 'text-slate-400 text-xs py-1';
-                        } else {
-                            el.textContent = names.join(', ');
-                            el.className = 'text-slate-800 text-sm md:text-base font-semibold leading-relaxed';
-                        }
-                    });
-                })
-                .catch(err => console.log('DB 조회 에러:', err));
+            ['D', 'I', 'S', 'C'].forEach(typeKey => {
+                const el = document.getElementById(`names-list-${typeKey}`);
+                const names = grouped[typeKey];
+                if (names.length === 0) {
+                    el.textContent = '제출된 참가자가 없습니다.';
+                    el.className = 'text-slate-400 text-xs py-1';
+                } else {
+                    el.textContent = names.join(', ');
+                    el.className = 'text-slate-800 text-sm md:text-base font-semibold leading-relaxed';
+                }
+            });
         }
 
         function clearAdminData() {
-            if (confirm('수집된 전체 참가자 목록을 초기화하시겠습니까?')) {
-                fetch(DB_URL, { method: 'DELETE' })
-                    .then(() => {
-                        loadAdminData();
-                        showToast('목록이 초기화되었습니다.');
-                    });
-            }
-        }
-
-        function resetAssessment() {
-            if (confirm('진단 결과가 초기화됩니다. 다시 시작하시겠습니까?')) {
-                initAnswers(); renderQuestions(); updateProgress();
-                document.getElementById('view-result').classList.add('hidden');
-                document.getElementById('view-intro').classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (confirm('수집된 참가자 목록을 초기화하시겠습니까?')) {
+                localStorage.removeItem('disc_results_list');
+                loadAdminData();
+                showToast('목록이 초기화되었습니다.');
             }
         }
 
