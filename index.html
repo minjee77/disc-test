@@ -173,11 +173,10 @@
             </div>
         </section>
 
-        <!-- Admin View (진행자 전용 유형별 이름 나열 현황판) -->
+        <!-- Admin View (진행자 전용 실시간 명단) -->
         <section id="view-admin" class="hidden space-y-6">
             <div class="bg-white rounded-2xl p-6 md:p-8 custom-shadow border border-slate-100 space-y-6">
                 
-                <!-- 상단 타이틀 영역 (설명 문구 제거됨) -->
                 <div class="flex justify-between items-center border-b border-slate-100 pb-4">
                     <h2 class="text-xl font-bold text-slate-900 flex items-center">
                         <i class="fa-solid fa-users text-indigo-600 mr-2"></i> 참가자 유형별 명단
@@ -188,49 +187,44 @@
                     </div>
                 </div>
 
-                <!-- 4개 유형별 이름 나열 영역 -->
                 <div class="space-y-4">
-                    <!-- D 유형 -->
                     <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-4">
                         <div class="font-bold text-rose-700 text-base mb-2 flex items-center">
                             <span class="w-3 h-3 rounded-full bg-rose-600 mr-2"></span>
                             D (주도형)
                         </div>
                         <div id="names-list-D" class="text-slate-800 text-sm md:text-base font-medium pl-5 leading-relaxed">
-                            -
+                            제출된 참가자가 없습니다.
                         </div>
                     </div>
 
-                    <!-- I 유형 -->
                     <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-4">
                         <div class="font-bold text-amber-700 text-base mb-2 flex items-center">
                             <span class="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
                             I (사교형)
                         </div>
                         <div id="names-list-I" class="text-slate-800 text-sm md:text-base font-medium pl-5 leading-relaxed">
-                            -
+                            제출된 참가자가 없습니다.
                         </div>
                     </div>
 
-                    <!-- S 유형 -->
                     <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
                         <div class="font-bold text-emerald-700 text-base mb-2 flex items-center">
                             <span class="w-3 h-3 rounded-full bg-emerald-600 mr-2"></span>
                             S (안정형)
                         </div>
                         <div id="names-list-S" class="text-slate-800 text-sm md:text-base font-medium pl-5 leading-relaxed">
-                            -
+                            제출된 참가자가 없습니다.
                         </div>
                     </div>
 
-                    <!-- C 유형 -->
                     <div class="bg-blue-50/50 border border-blue-200 rounded-xl p-4">
                         <div class="font-bold text-blue-700 text-base mb-2 flex items-center">
                             <span class="w-3 h-3 rounded-full bg-blue-600 mr-2"></span>
                             C (신중형)
                         </div>
                         <div id="names-list-C" class="text-slate-800 text-sm md:text-base font-medium pl-5 leading-relaxed">
-                            -
+                            제출된 참가자가 없습니다.
                         </div>
                     </div>
                 </div>
@@ -279,6 +273,9 @@
             S: { name: "안정형 (Steadiness)", badgeBg: "bg-emerald-600", color: "#059669", title: "협조적이고 참을성 있는 안정형 (S)", desc: "온화하고 공감 능력이 뛰어나며 조화로운 팀워크를 중요하게 생각합니다.", strengths: "경청 능력, 협조성, 신뢰감", motivations: "안정적인 상황, 팀원과의 관계", stress: "편안한 공간에서의 휴식", environment: "갑작스러운 변화가 적고 조화로운 환경" },
             C: { name: "신중형 (Conscientiousness)", badgeBg: "bg-blue-600", color: "#2563eb", title: "분석적이고 세심한 신중형 (C)", desc: "질 높은 과제 완수를 목표로 정확성과 논리성을 중시합니다.", strengths: "정밀함, 데이터 분석력, 품질 표준", motivations: "질 높은 성과, 명확한 가이드라인", stress: "자료 정리 및 정적인 취미", environment: "명확한 기대치와 분석할 시간이 주는 환경" }
         };
+
+        // 🌐 실시간 공용 데이터베이스 (Firebase Realtime Rest API)
+        const DB_URL = "https://disc-test-workshop-default-rtdb.firebaseio.com/results.json";
 
         let userName = "";
         let answers = {};
@@ -382,18 +379,22 @@
             showResults(totals);
         }
 
+        // 🚀 클라우드 DB로 실시간 데이터 제출
         function saveResultToCloud(name, totals) {
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
-            const newRecord = {
+            const payload = {
                 name: name,
-                typeKey: maxType
+                typeKey: maxType,
+                timestamp: Date.now()
             };
 
-            let localData = JSON.parse(localStorage.getItem('disc_results') || '[]');
-            localData.push(newRecord);
-            localStorage.setItem('disc_results', JSON.stringify(localData));
+            fetch(DB_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(err => console.log('DB 전송 에러:', err));
         }
 
         function showResults(totals) {
@@ -457,35 +458,44 @@
             }
         }
 
+        // 🚀 클라우드 DB에서 전체 참가자 명단 실시간 조회
         function loadAdminData() {
-            const data = JSON.parse(localStorage.getItem('disc_results') || '[]');
-            
-            let grouped = { D: [], I: [], S: [], C: [] };
+            fetch(DB_URL)
+                .then(res => res.json())
+                .then(data => {
+                    let grouped = { D: [], I: [], S: [], C: [] };
+                    if (data) {
+                        Object.values(data).forEach(item => {
+                            if (item.typeKey && grouped[item.typeKey]) {
+                                if (!grouped[item.typeKey].includes(item.name)) {
+                                    grouped[item.typeKey].push(item.name);
+                                }
+                            }
+                        });
+                    }
 
-            data.forEach(item => {
-                if (item.typeKey && grouped[item.typeKey]) {
-                    grouped[item.typeKey].push(item.name);
-                }
-            });
-
-            ['D', 'I', 'S', 'C'].forEach(typeKey => {
-                const el = document.getElementById(`names-list-${typeKey}`);
-                const names = grouped[typeKey];
-                if (names.length === 0) {
-                    el.textContent = '제출된 참가자가 없습니다.';
-                    el.className = 'text-slate-400 text-xs py-1';
-                } else {
-                    el.textContent = names.join(', ');
-                    el.className = 'text-slate-800 text-sm md:text-base font-semibold leading-relaxed';
-                }
-            });
+                    ['D', 'I', 'S', 'C'].forEach(typeKey => {
+                        const el = document.getElementById(`names-list-${typeKey}`);
+                        const names = grouped[typeKey];
+                        if (names.length === 0) {
+                            el.textContent = '제출된 참가자가 없습니다.';
+                            el.className = 'text-slate-400 text-xs py-1';
+                        } else {
+                            el.textContent = names.join(', ');
+                            el.className = 'text-slate-800 text-sm md:text-base font-semibold leading-relaxed';
+                        }
+                    });
+                })
+                .catch(err => console.log('DB 조회 에러:', err));
         }
 
         function clearAdminData() {
-            if (confirm('수집된 참가자 목록을 초기화하시겠습니까?')) {
-                localStorage.removeItem('disc_results');
-                loadAdminData();
-                showToast('목록이 초기화되었습니다.');
+            if (confirm('수집된 전체 참가자 목록을 초기화하시겠습니까?')) {
+                fetch(DB_URL, { method: 'DELETE' })
+                    .then(() => {
+                        loadAdminData();
+                        showToast('목록이 초기화되었습니다.');
+                    });
             }
         }
 
