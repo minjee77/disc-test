@@ -21,6 +21,19 @@
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col justify-between antialiased">
 
+    <!-- 숨겨진 전송용 iFrame (화면 전환 없이 전송) -->
+    <iframe name="gform_iframe" id="gform_iframe" style="display:none;"></iframe>
+
+    <!-- 구글 폼 전송용 숨김 폼 -->
+    <form id="gform" action="https://docs.google.com/forms/d/e/1FAIpQLSetqLHhKs-Sl-3eJmYeMdtq8en0JyUT4s-r6S0a64uKeRrzBA/formResponse" method="POST" target="gform_iframe" style="display:none;">
+        <input type="hidden" name="entry.1500487725" id="gform_name">
+        <input type="hidden" name="entry.1162725764" id="gform_type">
+        <input type="hidden" name="entry.600932316" id="gform_scoreD">
+        <input type="hidden" name="entry.310524757" id="gform_scoreI">
+        <input type="hidden" name="entry.1920889938" id="gform_scoreS">
+        <input type="hidden" name="entry.31942302" id="gform_scoreC">
+    </form>
+
     <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -222,9 +235,6 @@
             C: { name: "신중형 (Conscientiousness)", badgeBg: "bg-blue-600", color: "#2563eb", title: "분석적이고 세심한 신중형 (C)", desc: "질 높은 과제 완수를 목표로 정확성과 논리성을 중시합니다.", strengths: "정밀함, 데이터 분석력, 품질 표준", motivations: "질 높은 성과, 명확한 가이드라인", stress: "자료 정리 및 정적인 취미", environment: "명확한 기대치와 분석할 시간이 주는 환경" }
         };
 
-        // 🔗 발급받으신 Google Apps Script 웹 앱 URL 반영 완료
-        const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbznv-J-o2-lnen_nIVbznL71bRh_Cgr_9PGelGgDsZeobuRLDr5yP170XvngAHJgyQC/exec";
-
         let userName = "";
         let answers = {};
         let discChartInstance = null;
@@ -323,28 +333,24 @@
                 q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
             });
 
-            sendDataToGoogleForm(userName, totals);
+            // 🚀 표준 HTML form submit을 활용한 구글 폼 즉시 전송
+            sendToGoogleFormStandard(userName, totals);
             showResults(totals);
         }
 
-        function sendDataToGoogleForm(name, totals) {
+        function sendToGoogleFormStandard(name, totals) {
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
-            const payload = new URLSearchParams();
-            payload.append('name', name);
-            payload.append('type', typeInfo[maxType].name);
-            payload.append('scoreD', totals.D);
-            payload.append('scoreI', totals.I);
-            payload.append('scoreS', totals.S);
-            payload.append('scoreC', totals.C);
+            document.getElementById('gform_name').value = name;
+            document.getElementById('gform_type').value = typeInfo[maxType].name;
+            document.getElementById('gform_scoreD').value = totals.D;
+            document.getElementById('gform_scoreI').value = totals.I;
+            document.getElementById('gform_scoreS').value = totals.S;
+            document.getElementById('gform_scoreC').value = totals.C;
 
-            fetch(GOOGLE_WEBAPP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: payload.toString()
-            }).catch(err => console.log('Submission complete'));
+            // 보이지 않는 iframe으로 폼 제출
+            document.getElementById('gform').submit();
         }
 
         function showResults(totals) {
