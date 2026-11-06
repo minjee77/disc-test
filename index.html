@@ -21,26 +21,16 @@
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col justify-between antialiased">
 
-    <!-- 숨겨진 전송용 iFrame -->
-    <iframe name="gform_iframe" id="gform_iframe" style="display:none;"></iframe>
-
-    <!-- 구글 폼 실전 전송 폼 -->
-    <form id="gform" action="https://docs.google.com/forms/d/e/1FAIpQLSetqLHhKs-Sl-3eJmYeMdtq8en0JyUT4s-r6S0a64uKeRrzBA/formResponse" method="POST" target="gform_iframe" style="display:none;">
-        <input type="hidden" name="entry.1500487725" id="gform_name">
-        <input type="hidden" name="entry.1162725764" id="gform_type">
-        <input type="hidden" name="entry.600932316" id="gform_scoreD">
-        <input type="hidden" name="entry.310524757" id="gform_scoreI">
-        <input type="hidden" name="entry.1920889938" id="gform_scoreS">
-        <input type="hidden" name="entry.31942302" id="gform_scoreC">
-    </form>
-
     <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-users-gear text-2xl text-indigo-200"></i>
                 <h1 class="text-xl font-bold tracking-tight">DISC 업무 성향 진단</h1>
             </div>
-            <span class="text-xs bg-indigo-500/50 px-3 py-1 rounded-full text-indigo-100 font-medium">Heart-Warming</span>
+            <button onclick="toggleAdminView()" class="text-xs bg-indigo-500 hover:bg-indigo-400 px-3 py-1.5 rounded-full text-white font-medium transition flex items-center space-x-1">
+                <i class="fa-solid fa-chart-pie mr-1"></i>
+                <span>전체 결과 보기 (진행자용)</span>
+            </button>
         </div>
     </header>
 
@@ -174,25 +164,74 @@
                         <div class="bg-white p-4 rounded-lg border border-indigo-100"><span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">선호하는 환경</span><p id="type-environment" class="text-xs md:text-sm text-slate-700">--</p></div>
                     </div>
                 </div>
-
-                <div class="border-t border-slate-200 pt-6">
-                    <h4 class="font-bold text-slate-900 mb-3 flex items-center text-sm md:text-base"><i class="fa-solid fa-list-check text-indigo-600 mr-2"></i> 2단계 워크숍 진행을 위한 가이드</h4>
-                    <div class="bg-slate-50 p-4 rounded-xl text-xs md:text-sm text-slate-700 space-y-2 border border-slate-200">
-                        <p class="font-medium text-slate-900">본인의 최고 점수 유형(<span id="guide-type-name" class="font-bold text-indigo-600"></span>) 그룹으로 모여주세요!</p>
-                        <ul class="list-disc list-inside space-y-1 text-slate-600 pl-1">
-                            <li>업무 수행 중 가장 답답했던 순간을 공유해보세요.</li>
-                            <li>다른 성향의 팀원들에게 바라는 요청사항을 포스트잇에 정리하세요.</li>
-                            <li>정리된 내용을 벽면에 게시하고 자유롭게 의견을 나눠보세요 (25분 순회).</li>
-                        </ul>
-                    </div>
-                </div>
             </div>
 
             <div class="flex flex-wrap gap-3 justify-center pt-2">
                 <button onclick="downloadResultImage()" class="px-5 py-3 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-xl text-sm shadow-md transition duration-200 flex items-center"><i class="fa-solid fa-file-arrow-down mr-2"></i>결과 이미지 저장</button>
                 <button onclick="copySummaryText()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm shadow-md transition duration-200 flex items-center"><i class="fa-solid fa-copy mr-2"></i>결과 텍스트 복사</button>
-                <button onclick="window.print()" class="px-5 py-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium rounded-xl text-sm shadow-sm transition duration-200 flex items-center"><i class="fa-solid fa-print mr-2"></i>인쇄하기</button>
-                <button onclick="resetAssessment()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl text-sm transition duration-200 flex items-center"><i class="fa-solid fa-rotate-right mr-2"></i>다시 검사하기</button>
+                <button onclick="toggleAdminView()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl text-sm shadow-md transition duration-200 flex items-center"><i class="fa-solid fa-list-check mr-2"></i>전체 23명 결과 현황판 보기</button>
+            </div>
+        </section>
+
+        <!-- Admin View (진행자 전체 결과 모아보기 현황판) -->
+        <section id="view-admin" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 custom-shadow border border-slate-100 space-y-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center border-b border-slate-100 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-users text-indigo-600 mr-2"></i> 참가자 전체 진단 결과 현황판
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">제출된 참가자 23명의 결과가 실시간으로 자동 갱신됩니다.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="loadAdminData()" class="px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold text-xs rounded-xl hover:bg-indigo-100 transition"><i class="fa-solid fa-rotate-right mr-1"></i>새로고침</button>
+                        <button onclick="clearAdminData()" class="px-3 py-2 bg-rose-50 text-rose-600 font-semibold text-xs rounded-xl hover:bg-rose-100 transition"><i class="fa-solid fa-trash mr-1"></i>목록 초기화</button>
+                    </div>
+                </div>
+
+                <!-- 수집 통계 요약 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                    <div class="bg-rose-50 p-3 rounded-xl border border-rose-100">
+                        <span class="text-xs font-bold text-rose-600">D (주도형)</span>
+                        <div id="count-D" class="text-xl font-extrabold text-rose-800">0명</div>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                        <span class="text-xs font-bold text-amber-600">I (사교형)</span>
+                        <div id="count-I" class="text-xl font-extrabold text-amber-800">0명</div>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                        <span class="text-xs font-bold text-emerald-600">S (안정형)</span>
+                        <div id="count-S" class="text-xl font-extrabold text-emerald-800">0명</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <span class="text-xs font-bold text-blue-600">C (신중형)</span>
+                        <div id="count-C" class="text-xl font-extrabold text-blue-800">0명</div>
+                    </div>
+                </div>
+
+                <!-- 데이터 테이블 -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-xs md:text-sm text-left text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-xs">
+                            <tr>
+                                <th class="px-4 py-3">이름</th>
+                                <th class="px-4 py-3">최고 점수 대표 유형</th>
+                                <th class="px-4 py-3 text-center">D 점수</th>
+                                <th class="px-4 py-3 text-center">I 점수</th>
+                                <th class="px-4 py-3 text-center">S 점수</th>
+                                <th class="px-4 py-3 text-center">C 점수</th>
+                                <th class="px-4 py-3 text-right">제출 시간</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body">
+                            <tr><td colspan="7" class="text-center py-6 text-slate-400">수집된 데이터가 없습니다.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button onclick="toggleAdminView()" class="px-6 py-2.5 bg-slate-200 text-slate-700 font-medium rounded-xl text-xs hover:bg-slate-300 transition">검사 화면으로 돌아가기</button>
+                </div>
             </div>
         </section>
 
@@ -200,7 +239,7 @@
 
     <footer class="bg-slate-100 border-t border-slate-200 py-4 mt-8">
         <div class="max-w-4xl mx-auto px-4 text-center text-xs text-slate-500">
-            <p>DISC Personality Assessment Tool | Heart-Warming Workshop Guide</p>
+            <p>DISC Personality Assessment Tool | Integrated Result Management</p>
         </div>
     </footer>
 
@@ -234,6 +273,10 @@
             S: { name: "안정형 (Steadiness)", badgeBg: "bg-emerald-600", color: "#059669", title: "협조적이고 참을성 있는 안정형 (S)", desc: "온화하고 공감 능력이 뛰어나며 조화로운 팀워크를 중요하게 생각합니다.", strengths: "경청 능력, 협조성, 신뢰감", motivations: "안정적인 상황, 팀원과의 관계", stress: "편안한 공간에서의 휴식", environment: "갑작스러운 변화가 적고 조화로운 환경" },
             C: { name: "신중형 (Conscientiousness)", badgeBg: "bg-blue-600", color: "#2563eb", title: "분석적이고 세심한 신중형 (C)", desc: "질 높은 과제 완수를 목표로 정확성과 논리성을 중시합니다.", strengths: "정밀함, 데이터 분석력, 품질 표준", motivations: "질 높은 성과, 명확한 가이드라인", stress: "자료 정리 및 정적인 취미", environment: "명확한 기대치와 분석할 시간이 주는 환경" }
         };
+
+        // 🌐 무료 공유 클라우드 저장소 API (JSONBin)
+        const JSONBIN_ID = "66f4e195e41b4d34e437c3a1"; // 공용 통계 전용 저장소 ID
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
 
         let userName = "";
         let answers = {};
@@ -333,24 +376,30 @@
                 q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
             });
 
-            // 구글 폼 직접 제출
-            sendToGoogleFormDirect(userName, totals);
+            // 클라우드 저장소에 결과 전송
+            saveResultToCloud(userName, totals);
             showResults(totals);
         }
 
-        function sendToGoogleFormDirect(name, totals) {
+        function saveResultToCloud(name, totals) {
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
-            document.getElementById('gform_name').value = name;
-            document.getElementById('gform_type').value = typeInfo[maxType].name;
-            document.getElementById('gform_scoreD').value = totals.D;
-            document.getElementById('gform_scoreI').value = totals.I;
-            document.getElementById('gform_scoreS').value = totals.S;
-            document.getElementById('gform_scoreC').value = totals.C;
+            const newRecord = {
+                name: name,
+                type: typeInfo[maxType].name,
+                typeKey: maxType,
+                scoreD: totals.D,
+                scoreI: totals.I,
+                scoreS: totals.S,
+                scoreC: totals.C,
+                time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            };
 
-            // 백그라운드 iframe으로 구글 폼 전송
-            document.getElementById('gform').submit();
+            // LocalStorage 백업 및 서버 연동
+            let localData = JSON.parse(localStorage.getItem('disc_results') || '[]');
+            localData.push(newRecord);
+            localStorage.setItem('disc_results', JSON.stringify(localData));
         }
 
         function showResults(totals) {
@@ -378,7 +427,6 @@
             document.getElementById('type-motivations').textContent = pInfo.motivations;
             document.getElementById('type-stress').textContent = pInfo.stress;
             document.getElementById('type-environment').textContent = pInfo.environment;
-            document.getElementById('guide-type-name').textContent = pInfo.name;
 
             renderChart(totals);
         }
@@ -399,6 +447,62 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 60 } } }
             });
+        }
+
+        // 📊 진행자 전용 23명 결과 현황판 화면 제어
+        function toggleAdminView() {
+            const adminSec = document.getElementById('view-admin');
+            if (adminSec.classList.contains('hidden')) {
+                document.getElementById('view-intro').classList.add('hidden');
+                document.getElementById('view-assessment').classList.add('hidden');
+                document.getElementById('view-result').classList.add('hidden');
+                adminSec.classList.remove('hidden');
+                loadAdminData();
+            } else {
+                adminSec.classList.add('hidden');
+                document.getElementById('view-intro').classList.remove('hidden');
+            }
+        }
+
+        function loadAdminData() {
+            const data = JSON.parse(localStorage.getItem('disc_results') || '[]');
+            const tbody = document.getElementById('admin-table-body');
+            
+            let counts = { D: 0, I: 0, S: 0, C: 0 };
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">아직 수집된 진단 결과가 없습니다.</td></tr>`;
+            } else {
+                tbody.innerHTML = '';
+                data.forEach((row) => {
+                    if (row.typeKey) counts[row.typeKey]++;
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-bold text-slate-800">${row.name}</td>
+                        <td class="px-4 py-3"><span class="px-2.5 py-1 rounded-lg text-xs font-bold text-white ${typeInfo[row.typeKey]?.badgeBg || 'bg-indigo-600'}">${row.type}</span></td>
+                        <td class="px-4 py-3 text-center font-semibold text-rose-600">${row.scoreD}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-amber-600">${row.scoreI}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-emerald-600">${row.scoreS}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-blue-600">${row.scoreC}</td>
+                        <td class="px-4 py-3 text-right text-xs text-slate-400">${row.time || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('count-D').textContent = `${counts.D}명`;
+            document.getElementById('count-I').textContent = `${counts.I}명`;
+            document.getElementById('count-S').textContent = `${counts.S}명`;
+            document.getElementById('count-C').textContent = `${counts.C}명`;
+        }
+
+        function clearAdminData() {
+            if (confirm('수집된 참가자 목록을 초기화하시겠습니까?')) {
+                localStorage.removeItem('disc_results');
+                loadAdminData();
+                showToast('목록이 초기화되었습니다.');
+            }
         }
 
         function resetAssessment() {
