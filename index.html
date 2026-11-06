@@ -181,7 +181,6 @@
                     </h2>
                     <div class="flex items-center space-x-2">
                         <button onclick="loadAdminData()" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-semibold text-xs rounded-lg hover:bg-indigo-100 transition"><i class="fa-solid fa-rotate-right mr-1"></i>새로고침</button>
-                        <button onclick="clearAdminData()" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-semibold text-xs rounded-lg hover:bg-rose-100 transition"><i class="fa-solid fa-trash mr-1"></i>목록 초기화</button>
                     </div>
                 </div>
 
@@ -247,6 +246,9 @@
     </div>
 
     <script>
+        // 🔗 Google Apps Script 웹 앱 연동 주소 적용 완료[cite: 9]
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyviIzaxpCgNzplO8HUt1K0bLvCbaDeIGyR_H7RjUzh8lMup1n9S2CLTP6pxXIGt53k/exec";
+
         const rawQuestions = [
             { id: 1, title: "1. 내 성격은...", options: [{ type: 'C', text: "진지하고, 세심하다" }, { type: 'S', text: "태평스럽고 느리다" }, { type: 'I', text: "사교적이며 감정표현을 잘한다" }, { type: 'D', text: "명령적이고, 주도적이다" }] },
             { id: 2, title: "2. 내 성격 스타일은...", options: [{ type: 'C', text: "세부사항을 중시" }, { type: 'S', text: "과정과 팀을 중시" }, { type: 'I', text: "사람관계 중시" }, { type: 'D', text: "일의 결과를 중시" }] },
@@ -370,25 +372,20 @@
                 q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
             });
 
-            saveResult(userName, totals);
+            sendToGoogleSheet(userName, totals);
             showResults(totals);
         }
 
-        function saveResult(name, totals) {
+        function sendToGoogleSheet(name, totals) {
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
-            let currentList = JSON.parse(localStorage.getItem('disc_results_list') || '[]');
-            
-            // 동일 이름 중복 제출 방지 (이름이 있으면 유형만 업데이트)
-            const existingIndex = currentList.findIndex(item => item.name === name);
-            if (existingIndex > -1) {
-                currentList[existingIndex].typeKey = maxType;
-            } else {
-                currentList.push({ name: name, typeKey: maxType });
-            }
-            
-            localStorage.setItem('disc_results_list', JSON.stringify(currentList));
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, typeKey: maxType })
+            }).catch(err => console.log('전송 에러:', err));
         }
 
         function showResults(totals) {
@@ -453,34 +450,38 @@
         }
 
         function loadAdminData() {
-            const data = JSON.parse(localStorage.getItem('disc_results_list') || '[]');
-            let grouped = { D: [], I: [], S: [], C: [] };
-            
-            data.forEach(item => {
-                if (item.typeKey && grouped[item.typeKey]) {
-                    grouped[item.typeKey].push(item.name);
-                }
-            });
+            fetch(GAS_URL)
+                .then(res => res.json())
+                .then(rows => {
+                    let grouped = { D: [], I: [], S: [], C: [] };
+                    if (rows && rows.length > 0) {
+                        rows.forEach(row => {
+                            const name = row[1];
+                            const typeKey = row[2];
+                            if (typeKey && grouped[typeKey]) {
+                                if (!grouped[typeKey].includes(name)) {
+                                    grouped[typeKey].push(name);
+                                }
+                            }
+                        });
+                    }
 
-            ['D', 'I', 'S', 'C'].forEach(typeKey => {
-                const el = document.getElementById(`names-list-${typeKey}`);
-                const names = grouped[typeKey];
-                if (names.length === 0) {
-                    el.textContent = '제출된 참가자가 없습니다.';
-                    el.className = 'text-slate-400 text-xs py-1';
-                } else {
-                    el.textContent = names.join(', ');
-                    el.className = 'text-slate-800 text-sm md:text-base font-semibold leading-relaxed';
-                }
-            });
-        }
-
-        function clearAdminData() {
-            if (confirm('수집된 참가자 목록을 초기화하시겠습니까?')) {
-                localStorage.removeItem('disc_results_list');
-                loadAdminData();
-                showToast('목록이 초기화되었습니다.');
-            }
+                    ['D', 'I', 'S', 'C'].forEach(typeKey => {
+                        const el = document.getElementById(`names-list-${typeKey}`);
+                        const names = grouped[typeKey];
+                        if (names.length === 0) {
+                            el.textContent = '제출된 참가자가 없습니다.';
+                            el.className = 'text-slate-400 text-xs py-1';
+                        } else {
+                            el.textContent = names.join(', ');
+                            el.className = 'text-slate-800 text-sm md:text-base font-semibold leading-relaxed';
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.log('데이터 로드 오류:', err);
+                    showToast('구글 시트 연동 정보를 확인해주세요.');
+                });
         }
 
         function showToast(msg) {
