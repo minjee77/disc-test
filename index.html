@@ -21,10 +21,10 @@
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col justify-between antialiased">
 
-    <!-- 숨겨진 전송용 iFrame (화면 전환 없이 전송) -->
+    <!-- 숨겨진 전송용 iFrame -->
     <iframe name="gform_iframe" id="gform_iframe" style="display:none;"></iframe>
 
-    <!-- 구글 폼 전송용 숨김 폼 -->
+    <!-- 구글 폼 실전 전송 폼 -->
     <form id="gform" action="https://docs.google.com/forms/d/e/1FAIpQLSetqLHhKs-Sl-3eJmYeMdtq8en0JyUT4s-r6S0a64uKeRrzBA/formResponse" method="POST" target="gform_iframe" style="display:none;">
         <input type="hidden" name="entry.1500487725" id="gform_name">
         <input type="hidden" name="entry.1162725764" id="gform_type">
@@ -333,12 +333,12 @@
                 q.options.forEach((opt, idx) => { totals[opt.type] += answers[q.id][idx]; });
             });
 
-            // 🚀 표준 HTML form submit을 활용한 구글 폼 즉시 전송
-            sendToGoogleFormStandard(userName, totals);
+            // 구글 폼 직접 제출
+            sendToGoogleFormDirect(userName, totals);
             showResults(totals);
         }
 
-        function sendToGoogleFormStandard(name, totals) {
+        function sendToGoogleFormDirect(name, totals) {
             let maxType = 'D', maxScore = -1;
             ['D', 'I', 'S', 'C'].forEach(t => { if (totals[t] > maxScore) { maxScore = totals[t]; maxType = t; } });
 
@@ -349,7 +349,7 @@
             document.getElementById('gform_scoreS').value = totals.S;
             document.getElementById('gform_scoreC').value = totals.C;
 
-            // 보이지 않는 iframe으로 폼 제출
+            // 백그라운드 iframe으로 구글 폼 전송
             document.getElementById('gform').submit();
         }
 
